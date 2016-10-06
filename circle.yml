@@ -40,7 +40,7 @@ test:
 deployment:
     master:
         tag: /v[0-9]+(\.[0-9]+)*/
-        owner: veritrans
+        owner: rakawestu
         commands:
             - ./gradlew :clean :corekit:assembleRelease :corekit:bintrayUpload -PdisablePreDex
             - ./gradlew :clean :uikit:assembleRelease :uikit:bintrayUpload -PdisablePreDex
@@ -54,10 +54,10 @@ deployment:
 
     bump:
       branch: release
-      owner: veritrans
+      owner: rakawestu
       commands:
             - bmp -p
             - source environmentSetup.sh && setGit
             - bmp -c
-            - git checkout release && git merge master
+            - git checkout master && git merge release
             - git push origin release --tag
