@@ -4,7 +4,6 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.design.widget.AppBarLayout;
@@ -14,7 +13,6 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
-import android.util.Log;
 import android.util.TypedValue;
 import android.view.View;
 import android.widget.ImageView;
@@ -22,27 +20,24 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.bumptech.glide.Glide;
+import com.koushikdutta.ion.Ion;
 import com.midtrans.raygun.RaygunClient;
-import com.midtrans.raygun.RaygunOnBeforeSend;
-import com.midtrans.raygun.messages.RaygunMessage;
-import com.midtrans.raygun.messages.RaygunMessageDetails;
 import com.midtrans.sdk.corekit.callback.CheckoutCallback;
 import com.midtrans.sdk.corekit.callback.TransactionOptionsCallback;
 import com.midtrans.sdk.corekit.core.Constants;
-import com.midtrans.sdk.corekit.core.LocalDataHandler;
 import com.midtrans.sdk.corekit.core.Logger;
 import com.midtrans.sdk.corekit.core.MidtransSDK;
-import com.midtrans.sdk.corekit.core.SdkUtil;
 import com.midtrans.sdk.corekit.core.TransactionRequest;
 import com.midtrans.sdk.corekit.core.themes.ColorTheme;
 import com.midtrans.sdk.corekit.core.themes.CustomColorTheme;
 import com.midtrans.sdk.corekit.models.CustomerDetails;
 import com.midtrans.sdk.corekit.models.ItemDetails;
-import com.midtrans.sdk.corekit.models.MerchantPreferences;
+import com.midtrans.sdk.corekit.models.PaymentDetails;
 import com.midtrans.sdk.corekit.models.PaymentMethodsModel;
 import com.midtrans.sdk.corekit.models.TransactionResponse;
 import com.midtrans.sdk.corekit.models.UserDetail;
+import com.midtrans.sdk.corekit.models.promo.Promo;
+import com.midtrans.sdk.corekit.models.promo.PromoDetails;
 import com.midtrans.sdk.corekit.models.snap.EnabledPayment;
 import com.midtrans.sdk.corekit.models.snap.Token;
 import com.midtrans.sdk.corekit.models.snap.Transaction;
@@ -51,12 +46,12 @@ import com.midtrans.sdk.corekit.utilities.Utils;
 import com.midtrans.sdk.uikit.BuildConfig;
 import com.midtrans.sdk.uikit.PaymentMethods;
 import com.midtrans.sdk.uikit.R;
+import com.midtrans.sdk.uikit.UiKitOnBeforeSend;
 import com.midtrans.sdk.uikit.adapters.ItemDetailsAdapter;
 import com.midtrans.sdk.uikit.adapters.PaymentMethodsAdapter;
 import com.midtrans.sdk.uikit.models.EnabledPayments;
 import com.midtrans.sdk.uikit.models.ItemViewDetails;
 import com.midtrans.sdk.uikit.models.MessageInfo;
-import com.midtrans.sdk.uikit.utilities.DeviceUtils;
 import com.midtrans.sdk.uikit.utilities.MessageUtil;
 import com.midtrans.sdk.uikit.utilities.SdkUIFlowUtil;
 import com.midtrans.sdk.uikit.utilities.UiKitConstants;
@@ -81,10 +76,7 @@ import com.midtrans.sdk.uikit.widgets.DefaultTextView;
 import com.midtrans.sdk.uikit.widgets.FancyButton;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
-import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -304,14 +296,13 @@ public class PaymentMethodsActivity extends BaseActivity implements PaymentMetho
                 || isTelkomselCash || isIndosatDompetku || isXlTunai
                 || isIndomaret || isKioson || isGci) {
             progressMessage.setText(R.string.txt_checkout);
+        } else {
+            progressMessage.setText(getString(R.string.txt_loading_payment));
         }
 
-        // Init progress
-        Glide.with(this)
-                .load(R.drawable.midtrans_loader)
-                .asGif()
-                .into(progressImage);
-        progressMessage.setText(R.string.txt_loading_payment);
+        Ion.with(progressImage)
+                .load(SdkUIFlowUtil.getImagePath(this) + R.drawable.midtrans_loader);
+
     }
 
     private void getPaymentPages() {
@@ -321,12 +312,12 @@ public class PaymentMethodsActivity extends BaseActivity implements PaymentMetho
 
         if (!isAlreadyUtilized()) {
 
-            String snapToken = getIntent().getStringExtra(UiKitConstants.EXTRA_SNAP_TOKEN);
+            String snapToken = midtransSDK.readAuthenticationToken();
             if (!TextUtils.isEmpty(snapToken)) {
-                LocalDataHandler.saveString(Constants.AUTH_TOKEN, snapToken);
                 getPaymentOptions(snapToken);
                 return;
             }
+
 
             if (userDetail == null || TextUtils.isEmpty(userDetail.getUserId())) {
                 midtransSDK.notifyTransactionFinished(new TransactionResult(null, null, TransactionResult.STATUS_INVALID));
@@ -337,14 +328,14 @@ public class PaymentMethodsActivity extends BaseActivity implements PaymentMetho
             midtransSDK.checkout(userDetail.getUserId(), new CheckoutCallback() {
                 @Override
                 public void onSuccess(Token token) {
-                    Log.i(TAG, "checkout token:" + token.getTokenId());
-                    LocalDataHandler.saveString(Constants.AUTH_TOKEN, token.getTokenId());
+                    Logger.i(TAG, "checkout token:" + token.getTokenId());
+                    midtransSDK.setAuthenticationToken(token.getTokenId());
                     getPaymentOptions(token.getTokenId());
                 }
 
                 @Override
                 public void onFailure(Token token, String reason) {
-                    Log.d(TAG, "Failed to registering transaction: " + reason);
+                    Logger.d(TAG, "Failed to registering transaction: " + reason);
                     enableButtonBack(true);
                     String errorMessage = MessageUtil.createMessageWhenCheckoutFailed(PaymentMethodsActivity.this, token.getErrorMessage());
                     showErrorMessage(errorMessage);
@@ -422,6 +413,7 @@ public class PaymentMethodsActivity extends BaseActivity implements PaymentMetho
                     midtransSDK.setPromoResponses(transaction.getPromos());
                     midtransSDK.setMerchantLogo(logoUrl);
                     midtransSDK.setMerchantName(merchantName);
+                    midtransSDK.setPaymentDetails(new PaymentDetails(transaction.getTransactionDetails(), transaction.getItemDetails()));
                     // Prioritize custom color themes over Snap preferences
                     if (midtransSDK.getColorTheme() == null
                             || !(midtransSDK.getColorTheme() instanceof CustomColorTheme)) {
@@ -483,47 +475,7 @@ public class PaymentMethodsActivity extends BaseActivity implements PaymentMetho
     private void initCustomTrackingProperties() {
 
         if (BuildConfig.FLAVOR.equals(UiKitConstants.ENVIRONMENT_PRODUCTION)) {
-            RaygunClient.setOnBeforeSend(new RaygunOnBeforeSend() {
-                @Override
-                public RaygunMessage onBeforeSend(RaygunMessage message) {
-
-                    try {
-                        RaygunMessageDetails details = message.getDetails();
-                        details.setGroupingKey(UiKitConstants.KEY_TRACKING_GROUP);
-
-                        Map<String, String> map = new HashMap<>();
-
-                        MerchantPreferences preferences = MidtransSDK.getInstance().getMerchantData().getPreference();
-
-                        if (preferences != null) {
-                            map.put(UiKitConstants.KEY_TRACKING_MERCHANT_NAME, preferences.getDisplayName());
-                        }
-                        String[] appInfo = DeviceUtils.getApplicationName(PaymentMethodsActivity.this);
-                        map.put(UiKitConstants.KEY_TRACKING_HOST_APP, appInfo[0]);
-                        map.put(UiKitConstants.KEY_TRACKING_HOST_APP_VERSION, appInfo[1]);
-                        map.put(UiKitConstants.KEY_TRACKING_DEVICE_ID, SdkUtil.getDeviceId(PaymentMethodsActivity.this));
-                        map.put(UiKitConstants.KEY_TRACKING_LANGUAGE, Locale.getDefault().getLanguage());
-                        map.put(UiKitConstants.KEY_TRACKING_DEVICE_MODEL, Build.MODEL);
-                        map.put(UiKitConstants.KEY_TRACKING_DEVICE_TYPE, Build.BRAND);
-                        map.put(UiKitConstants.KEY_TRACKING_TIME_STAMP, String.valueOf(System.currentTimeMillis()));
-                        map.put(UiKitConstants.KEY_TRACKING_NETWORK, DeviceUtils.getConnectivityType(PaymentMethodsActivity.this));
-                        map.put(UiKitConstants.KEY_TRACKING_OS_VERSION, String.valueOf(Build.VERSION.SDK_INT));
-                        map.put(UiKitConstants.KEY_TRACKING_PLATFORM, UiKitConstants.VALUE_TRACKING_PLATFORM);
-                        map.put(UiKitConstants.KEY_TRACKING_SCREEN_SIZE, DeviceUtils.getDisplaySize(PaymentMethodsActivity.this));
-                        map.put(UiKitConstants.KEY_TRACKING_SDK_VERSION, BuildConfig.VERSION_NAME);
-                        map.put(UiKitConstants.KEY_TRACKING_CPU_USAGE, DeviceUtils.getTotalCpuUsage());
-                        map.put(UiKitConstants.KEY_TRACKING_MEMORY_USAGE, DeviceUtils.getMemoryUsage());
-                        map.put(UiKitConstants.KEY_TRACKING_ENVIRONMENT, BuildConfig.FLAVOR);
-
-                        details.setUserCustomData(map);
-
-                    } catch (Exception e) {
-                        Log.d(TAG, "raygun:" + e.getMessage());
-                    }
-
-                    return message;
-                }
-            });
+            RaygunClient.setOnBeforeSend(new UiKitOnBeforeSend(this));
         }
     }
 
@@ -921,13 +873,37 @@ public class PaymentMethodsActivity extends BaseActivity implements PaymentMetho
             }
         }
 
-        /**
-         * Disable payment sorting, just follow payment list order from MAP
-         if (!bankTransfers.isEmpty()) {
-         data.add(PaymentMethods.getMethods(this, getString(R.string.payment_bank_transfer), EnabledPayment.STATUS_UP));
-         }
-         SdkUtil.sortPaymentMethodsByPriority(data);
-         */
+        markPaymentMethodHavePromo(data);
+    }
+
+    private void markPaymentMethodHavePromo(List<PaymentMethodsModel> data) {
+        PromoDetails promoDetails = MidtransSDK.getInstance().getTransaction().getPromoDetails();
+        if (promoDetails != null) {
+            List<Promo> promos = promoDetails.getPromos();
+            if (promos != null && !promos.isEmpty()) {
+                if (data != null && !data.isEmpty()) {
+                    for (PaymentMethodsModel model : data) {
+                        Promo promo = findPromoByPymentMethod(model, promos);
+                        if (promo != null) {
+                            model.setHavePromo(true);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private Promo findPromoByPymentMethod(PaymentMethodsModel model, List<Promo> promos) {
+        for (Promo promo : promos) {
+            List<String> paymentTypes = promo.getPaymentTypes();
+            if (paymentTypes != null && !paymentTypes.isEmpty()) {
+                if (paymentTypes.contains(model.getPaymentType())) {
+                    return promo;
+                }
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -943,6 +919,10 @@ public class PaymentMethodsActivity extends BaseActivity implements PaymentMetho
         if (resultCode == UiKitConstants.RESULT_SDK_NOT_AVAILABLE) {
             finish();
             return;
+        }
+
+        if (midtransSDK != null) {
+            midtransSDK.resetPaymentDetails();
         }
 
         if (requestCode == Constants.RESULT_CODE_PAYMENT_TRANSFER) {
@@ -1031,10 +1011,11 @@ public class PaymentMethodsActivity extends BaseActivity implements PaymentMetho
 
     private void showLogo(String url) {
         if (!TextUtils.isEmpty(url)) {
-            Glide.with(this)
-                    .load(url)
-                    .into(logo);
             merchantName.setVisibility(View.GONE);
+
+            Ion.with(logo)
+                    .load(url);
+
         } else {
             logo.setVisibility(View.INVISIBLE);
         }
