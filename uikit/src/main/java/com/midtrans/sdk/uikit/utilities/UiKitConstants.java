@@ -20,6 +20,7 @@ public class UiKitConstants {
     public static final int INTENT_CODE_PAYMENT = 108;
     public static final int INTENT_VERIFICATION = 110;
     public static final int INTENT_WEBVIEW_PAYMENT = 111;
+    public static final int INTENT_CODE_GOPAY = 345;
 
 
     public static final String KEY_USER_DETAILS = "user_details";
@@ -36,7 +37,9 @@ public class UiKitConstants {
     public static final String STATUS_CODE_411 = "411";
     public static final String STATUS_CODE_404 = "404";
     public static final String STATUS_CODE_406 = "406";
+    public static final String STATUS_CODE_407 = "407";
     public static final String STATUS_CODE_500 = "500";
+    public static final String STATUS_CODE_502 = "502";
     public static final String STATUS_CODE_503 = "503";
     public static final String STATUS_CODE_504 = "504";
 
@@ -60,6 +63,7 @@ public class UiKitConstants {
     public static final String CALLBACK_BRI_EPAY = "briPayment?tid=";
     public static final String CALLBACK_MANDIRI_ECAH = "notify?id=";
     public static final String CALLBACK_BCA_KLIKPAY = "?id=";
+    public static final String CALLBACK_AKULAKU = "?refNo=";
 
     public static final int MONTH_COUNT = 12;
 

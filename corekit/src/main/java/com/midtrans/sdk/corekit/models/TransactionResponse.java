@@ -81,6 +81,8 @@ public class TransactionResponse implements Serializable {
     private String installmentTerm;
     @SerializedName("gopay_expiration")
     private String gopayExpiration;
+    @SerializedName("alfamart_expire_time")
+    private String alfamartExpireTime;
 
     @SerializedName("gopay_expiration_raw")
     private String gopayExpirationRaw;
@@ -137,6 +139,7 @@ public class TransactionResponse implements Serializable {
     private String qrCodeUrl;
     @SerializedName("deeplink_url")
     private String deeplinkUrl;
+    private String currency;
 
     public TransactionResponse(String statusCode, String statusMessage, String transactionId,
                                String orderId, String grossAmount, String paymentType,
@@ -519,5 +522,29 @@ public class TransactionResponse implements Serializable {
 
     public String getGopayExpirationRaw() {
         return gopayExpirationRaw;
+    }
+
+    public String getCurrency() {
+        return currency;
+    }
+
+    public void setCurrency(String currency) {
+        this.currency = currency;
+    }
+
+    public void setInstallmentTerm(String installmentTerm) {
+        this.installmentTerm = installmentTerm;
+    }
+
+    public String getAlfamartExpireTime() {
+        return alfamartExpireTime;
+    }
+
+    public void setAlfamartExpireTime(String alfamartExpireTime) {
+        this.alfamartExpireTime = alfamartExpireTime;
+    }
+
+    public void setGopayExpirationRaw(String gopayExpirationRaw) {
+        this.gopayExpirationRaw = gopayExpirationRaw;
     }
 }

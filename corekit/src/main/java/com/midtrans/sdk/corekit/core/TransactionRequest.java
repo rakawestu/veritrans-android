@@ -3,6 +3,7 @@ package com.midtrans.sdk.corekit.core;
 import android.support.annotation.NonNull;
 import android.text.TextUtils;
 
+import com.google.gson.annotations.SerializedName;
 import com.midtrans.sdk.corekit.models.BcaBankTransferRequestModel;
 import com.midtrans.sdk.corekit.models.BillInfoModel;
 import com.midtrans.sdk.corekit.models.BillingAddress;
@@ -12,6 +13,7 @@ import com.midtrans.sdk.corekit.models.ItemDetails;
 import com.midtrans.sdk.corekit.models.ShippingAddress;
 import com.midtrans.sdk.corekit.models.snap.BankTransferRequestModel;
 import com.midtrans.sdk.corekit.models.snap.CreditCard;
+import com.midtrans.sdk.corekit.models.snap.Gopay;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,6 +27,7 @@ import java.util.Map;
  */
 public class TransactionRequest {
 
+    private String currency = Currency.IDR;
     /**
      * payment method using which user wants to perform transaction. use payment methods from {@link
      * Constants}
@@ -40,7 +43,7 @@ public class TransactionRequest {
     /**
      * amount to charge customer.
      */
-    private long amount = 0L;
+    private Double amount = 0.0;
 
     /**
      * It helps to identify whether to execute transaction in secure manner or not.
@@ -78,6 +81,10 @@ public class TransactionRequest {
     private CustomerDetails mCustomerDetails = null;
 
     /**
+     * contains user app deeplink for merchant app
+     */
+    private Gopay gopay;
+    /**
      * helps to identify whether to use ui or not.
      */
     private boolean useUi = true;
@@ -94,16 +101,16 @@ public class TransactionRequest {
     private List<String> enabledPayments;
 
     /**
-     * @param orderId       order id of transaction.
-     * @param amount        amount to charge.
-     * @param paymentMethod payment method.
+     * @param orderId  order id of transaction.
+     * @param amount   amount to charge.
+     * @param currency currency
      */
-    public TransactionRequest(String orderId, long amount, int paymentMethod) {
+    public TransactionRequest(@NonNull String orderId, @NonNull Double amount, @NonNull String currency) {
 
         if (!TextUtils.isEmpty(orderId) && amount > 0) {
             this.orderId = orderId;
             this.amount = amount;
-            this.paymentMethod = paymentMethod;
+            this.currency = currency;
         } else {
             Logger.e("Invalid transaction data.");
         }
@@ -114,11 +121,12 @@ public class TransactionRequest {
      * @param orderId order id of transaction.
      * @param amount  amount to charge.
      */
-    public TransactionRequest(String orderId, long amount) {
+    public TransactionRequest(@NonNull String orderId, double amount) {
 
         if (!TextUtils.isEmpty(orderId) && amount > 0) {
             this.orderId = orderId;
             this.amount = amount;
+            this.currency = Currency.IDR;
             this.paymentMethod = Constants.PAYMENT_METHOD_NOT_SELECTED;
         } else {
             Logger.e("Invalid transaction data.");
@@ -245,7 +253,7 @@ public class TransactionRequest {
         return orderId;
     }
 
-    public long getAmount() {
+    public double getAmount() {
         return amount;
     }
 
@@ -391,5 +399,21 @@ public class TransactionRequest {
 
     public void setEnabledPayments(List<String> enabledPayments) {
         this.enabledPayments = enabledPayments;
+    }
+
+    public void setCurrency(String currency) {
+        this.currency = currency;
+    }
+
+    public String getCurrency() {
+        return currency;
+    }
+
+    public Gopay getGopay() {
+        return gopay;
+    }
+
+    public void setGopay(Gopay gopay) {
+        this.gopay = gopay;
     }
 }

@@ -233,13 +233,15 @@ public class MidtransAndroidSDKTest {
         PowerMockito.mockStatic(MixpanelAnalyticsManager.class);
 
         Mockito.when(contextMock.getApplicationContext()).thenReturn(contextMock);
-        Mockito.when(contextMock.getString(R.string.error_unable_to_connect)).thenReturn("not connected");
         Mockito.when(contextMock.getResources()).thenReturn(resourceMock);
         Mockito.when(contextMock.getResources().getDrawable(drawableIntDefaultMock)).thenReturn(drawableDefaultMock);
 
         Mockito.when(contextMock.getSystemService(Context.CONNECTIVITY_SERVICE)).thenReturn(connectivityManager);
         Mockito.when(connectivityManager.getActiveNetworkInfo()).thenReturn(networkInfo);
         Mockito.when(networkInfo.isConnected()).thenReturn(false);
+        when(TextUtils.isEmpty(Matchers.anyString())).thenReturn(false);
+        when(TextUtils.isEmpty(null)).thenReturn(true);
+        when(TextUtils.isEmpty("")).thenReturn(true);
 
         Mockito.when(contextMock.getSharedPreferences("local.data", Context.MODE_PRIVATE)).thenReturn(preference);
         Mockito.when(SdkUtil.newPreferences(contextMock, "local.data")).thenReturn(preference);
@@ -452,7 +454,6 @@ public class MidtransAndroidSDKTest {
 
     @Test
     public void getSnapTransaction_whenTokenNull() {
-        when(TextUtils.isEmpty(null)).thenReturn(true);
         when(midtransSDKSSpy.isNetworkAvailable()).thenReturn(true);
         midtransSDKSSpy.getTransactionOptions(null, transactionOptionCallbackMock);
         Mockito.verify(transactionOptionCallbackMock).onError(Matchers.any(Throwable.class));
@@ -460,7 +461,6 @@ public class MidtransAndroidSDKTest {
 
     @Test
     public void getSnapTransaction_whenNetworkUnAvailable() {
-        when(TextUtils.isEmpty(sdkTokenMock)).thenReturn(true);
         when(midtransSDKSSpy.isNetworkAvailable()).thenReturn(false);
         midtransSDKSSpy.getTransactionOptions(null, transactionOptionCallbackMock);
         Mockito.verify(transactionOptionCallbackMock).onError(Matchers.any(Throwable.class));
@@ -491,8 +491,9 @@ public class MidtransAndroidSDKTest {
 
     @Test
     public void snapPaymentUsingCard_whenTransactionRequestNull() {
+
         when(midtransSDKSSpy.isNetworkAvailable()).thenReturn(true);
-        midtransSDKSSpy.paymentUsingCard(cardToken, new CreditCardPaymentModel(snapToken, false), transactionCallbackMock);
+        midtransSDKSSpy.paymentUsingCard(cardToken, null, transactionCallbackMock);
         Mockito.verify(transactionCallbackMock).onError(Matchers.any(Throwable.class));
     }
 
@@ -2055,7 +2056,6 @@ public class MidtransAndroidSDKTest {
 
     @Test
     public void isSnapTokenAvailable_whenTokenEMpty() throws Exception {
-        when(TextUtils.isEmpty(null)).thenReturn(true);
         Assert.assertEquals(false, Whitebox.invokeMethod(midtransSDKSSpy, "snapTokenAvailable", null));
     }
 
@@ -2063,11 +2063,7 @@ public class MidtransAndroidSDKTest {
     public void isMerchantUrlAvailable() throws Exception {
         Assert.assertEquals(true, Whitebox.invokeMethod(midtransSDKSSpy, "merchantBaseUrlAvailable"));
     }
-    @Test
-    public void isMerchantUrlAvailable_whenMerchantUrlEmpty() throws Exception {
-        when(TextUtils.isEmpty(Matchers.anyString())).thenReturn(true);
-        Assert.assertEquals(false, Whitebox.invokeMethod(midtransSDKSSpy, "merchantBaseUrlAvailable"));
-    }
+
 
     @Test
     public void getSdkBaseUrl() throws Exception {

@@ -28,6 +28,7 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.midtrans.sdk.analytics.MixpanelAnalyticsManager;
 import com.midtrans.sdk.corekit.core.Logger;
 import com.midtrans.sdk.corekit.core.PaymentType;
 import com.midtrans.sdk.corekit.models.BankType;
@@ -36,6 +37,7 @@ import com.midtrans.sdk.corekit.models.TokenDetailsResponse;
 import com.midtrans.sdk.corekit.models.TransactionResponse;
 import com.midtrans.sdk.corekit.models.promo.Promo;
 import com.midtrans.sdk.corekit.models.snap.BanksPointResponse;
+import com.midtrans.sdk.corekit.models.snap.TransactionDetails;
 import com.midtrans.sdk.corekit.utilities.Utils;
 import com.midtrans.sdk.uikit.BuildConfig;
 import com.midtrans.sdk.uikit.R;
@@ -208,7 +210,16 @@ public class CreditCardDetailsActivity extends BasePaymentActivity implements Cr
     }
 
     private void initPromoList() {
-        promosAdapter = new PromosAdapter(getPrimaryColor(),
+        TransactionDetails transactionDetails = getMidtransSdk().getTransaction().getTransactionDetails();
+        String currency = "";
+
+        if (transactionDetails != null) {
+            currency = transactionDetails.getCurrency();
+        }
+
+        promosAdapter = new PromosAdapter(
+                getPrimaryColor(),
+                currency,
                 new PromosAdapter.OnPromoCheckedChangeListener() {
                     @Override
                     public void onPromoCheckedChanged(Promo promo) {
@@ -641,6 +652,26 @@ public class CreditCardDetailsActivity extends BasePaymentActivity implements Cr
         });
     }
 
+    private void setAnalyticsProperties(TransactionResponse response) {
+        MixpanelAnalyticsManager analyticsManager = getMidtransSdk().getmMixpanelAnalyticsManager();
+        if (analyticsManager != null) {
+            if (response != null) {
+                analyticsManager.setTransactionid(response.getTransactionId());
+                if (isOneClickMode()) {
+                    analyticsManager.setOneCLick(isOneClickMode());
+                } else if (isTwoClicksMode()) {
+                    analyticsManager.setTwoclicks(isTwoClicksMode());
+                }
+
+                if (!TextUtils.isEmpty(response.getInstallmentTerm())) {
+                    analyticsManager.setInstallmentAvailable(true);
+                    analyticsManager.setInstallmentRequired(presenter.isInstallmentOptionRequired());
+                }
+            }
+
+        }
+    }
+
     private void setPromoSelected() {
         if (promosAdapter != null) {
             presenter.setSelectedPromo(promosAdapter.getSeletedPromo());
@@ -892,9 +923,10 @@ public class CreditCardDetailsActivity extends BasePaymentActivity implements Cr
                     break;
                 case BankType.MANDIRI:
                     imageBankLogo.setImageResource(R.drawable.mandiri);
-                    if (presenter.isMandiriDebitCard(cleanCardNumber)) {
-                        textTitle.setText(R.string.mandiri_debit_card);
-                    }
+                    break;
+                case BankType.MANDIRI_DEBIT:
+                    imageBankLogo.setImageResource(R.drawable.mandiri);
+                    textTitle.setText(R.string.mandiri_debit_card);
                     break;
                 case BankType.MAYBANK:
                     imageBankLogo.setImageResource(R.drawable.maybank);
@@ -1346,7 +1378,7 @@ public class CreditCardDetailsActivity extends BasePaymentActivity implements Cr
     }
 
     private void showErrorMessage(Throwable error) {
-        MessageInfo messageInfo = MessageUtil.createMessageOnError(this, error, null);
+        MessageInfo messageInfo = MessageUtil.createMessageOnError(error, this);
         SdkUIFlowUtil.showToast(this, messageInfo.detailsMessage);
     }
 
@@ -1502,6 +1534,7 @@ public class CreditCardDetailsActivity extends BasePaymentActivity implements Cr
 
     @Override
     public void onPaymentSuccess(TransactionResponse response) {
+        setAnalyticsProperties(response);
         if (isActivityRunning()) {
             if (presenter.isRbaAuthentication(response)) {
                 start3DSecurePage(response.getRedirectUrl(), UiKitConstants.INTENT_CODE_RBA_AUTHENTICATION);
@@ -1516,6 +1549,7 @@ public class CreditCardDetailsActivity extends BasePaymentActivity implements Cr
 
     @Override
     public void onPaymentFailure(TransactionResponse response) {
+        setAnalyticsProperties(response);
         hideProgressLayout();
         if (isActivityRunning()) {
             if (attempt < UiKitConstants.MAX_ATTEMPT) {
@@ -1523,10 +1557,6 @@ public class CreditCardDetailsActivity extends BasePaymentActivity implements Cr
                 showPaymentFailureMessage(response);
             } else {
                 initPaymentStatus(response);
-            }
-
-            if (response != null && response.getStatusCode().equals(getString(R.string.failed_code_400))) {
-                Logger.d("3dserror", "400:" + response.getValidationMessages().get(0));
             }
         }
     }
@@ -1564,13 +1594,9 @@ public class CreditCardDetailsActivity extends BasePaymentActivity implements Cr
         }
     }
 
-
     @Override
     public void onDeleteCardFailure() {
         hideProgressLayout();
-        if (isActivityRunning()) {
-            SdkUIFlowUtil.showToast(this, getString(R.string.error_delete_message));
-        }
     }
 
     @Override
@@ -1606,6 +1632,7 @@ public class CreditCardDetailsActivity extends BasePaymentActivity implements Cr
         if (presenter != null) {
             presenter.trackBackButtonClick(PAGE_NAME);
         }
+
         super.onBackPressed();
     }
 }

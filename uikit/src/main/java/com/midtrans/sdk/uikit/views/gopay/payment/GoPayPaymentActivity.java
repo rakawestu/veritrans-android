@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AlertDialog;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
@@ -42,6 +43,7 @@ public class GoPayPaymentActivity extends BasePaymentActivity implements GoPayPa
     private boolean isTablet, isGojekInstalled, isAlreadyGotResponse;
     private Boolean isGojekInstalledWhenPaused;
     private int attempt;
+    private int goPayIntentCode;
 
 
     @Override
@@ -139,6 +141,10 @@ public class GoPayPaymentActivity extends BasePaymentActivity implements GoPayPa
         if (isGojekInstalledWhenPaused != null && isGojekInstalledWhenPaused != isGojekInstalled) {
             recreate();
         }
+
+        if (goPayIntentCode == UiKitConstants.INTENT_CODE_GOPAY && presenter != null) {
+            presenter.getPaymentStatus();
+        }
     }
 
     @Override
@@ -158,7 +164,6 @@ public class GoPayPaymentActivity extends BasePaymentActivity implements GoPayPa
                     startActivityForResult(intent, UiKitConstants.INTENT_CODE_PAYMENT_STATUS);
                 } else {
                     isAlreadyGotResponse = true;
-
                     openDeeplink(response.getDeeplinkUrl());
                 }
             } else {
@@ -215,14 +220,17 @@ public class GoPayPaymentActivity extends BasePaymentActivity implements GoPayPa
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == UiKitConstants.INTENT_CODE_PAYMENT_STATUS) {
             finishPayment(RESULT_OK, presenter.getTransactionResponse());
+        } else if (requestCode == UiKitConstants.INTENT_CODE_GOPAY) {
+            this.goPayIntentCode = requestCode;
         }
     }
 
+
     private void openDeeplink(String deeplinkUrl) {
         Toast.makeText(this, getString(R.string.redirecting_to_gopay), Toast.LENGTH_SHORT)
-            .show();
+                .show();
         Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(deeplinkUrl));
-        startActivity(intent);
+        startActivityForResult(intent, UiKitConstants.INTENT_CODE_GOPAY);
     }
 
     private void showConfirmationDialog(String message) {
@@ -264,4 +272,21 @@ public class GoPayPaymentActivity extends BasePaymentActivity implements GoPayPa
             super.onBackPressed();
         }
     }
+
+    @Override
+    public void onGetTransactionStatusError(Throwable error) {
+        // do nothing
+    }
+
+    @Override
+    public void onGetTransactionStatusFailure(TransactionResponse response) {
+        // do nothing
+    }
+
+
+    @Override
+    public void onGetTransactionStatusSuccess(TransactionResponse response) {
+        showPaymentStatusPage(response, presenter.isShowPaymentStatusPage());
+    }
+
 }

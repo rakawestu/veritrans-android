@@ -51,5 +51,11 @@ public interface ISdkFlow {
 
     void runGci(Context context, String snapToken);
 
+    void runDanamonOnline(Context context, String tokenToken);
+
+    void runAkulaku(Context context, String snapToken);
+
+    void runAlfamart(Context context, String snapToken);
+
     void runCardRegistration(Context context, CardRegistrationCallback callback);
 }

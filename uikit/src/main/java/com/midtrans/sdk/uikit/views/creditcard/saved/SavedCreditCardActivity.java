@@ -14,7 +14,6 @@ import com.midtrans.sdk.corekit.models.TransactionResponse;
 import com.midtrans.sdk.uikit.R;
 import com.midtrans.sdk.uikit.abstracts.BasePaymentActivity;
 import com.midtrans.sdk.uikit.adapters.SavedCardsAdapter;
-import com.midtrans.sdk.uikit.utilities.SdkUIFlowUtil;
 import com.midtrans.sdk.uikit.utilities.UiKitConstants;
 import com.midtrans.sdk.uikit.views.creditcard.details.CreditCardDetailsActivity;
 import com.midtrans.sdk.uikit.widgets.FancyButton;
@@ -41,15 +40,15 @@ public class SavedCreditCardActivity extends BasePaymentActivity implements Save
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_saved_credit_card);
         initProperties();
-        initTitle();
+        setTitle(getString(R.string.saved_card));
         initCardsContainer();
         initTheme();
         initActionButton();
         initSavedCards();
     }
 
-    private void initTitle() {
-        textTitle.setText(getString(R.string.saved_card));
+    private void setTitle(String title) {
+        textTitle.setText(title);
     }
 
     private void initCardsContainer() {
@@ -226,10 +225,6 @@ public class SavedCreditCardActivity extends BasePaymentActivity implements Save
     @Override
     public void onDeleteCardFailure() {
         hideProgressLayout();
-        if (isActivityRunning()) {
-            SdkUIFlowUtil.showToast(this, getString(R.string.error_delete_message));
-        }
     }
-
 
 }

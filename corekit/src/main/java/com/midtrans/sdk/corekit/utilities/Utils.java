@@ -15,6 +15,7 @@ import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 
 import com.midtrans.sdk.corekit.core.Logger;
+import com.midtrans.sdk.corekit.models.snap.Authentication;
 
 import java.text.DateFormat;
 import java.text.DecimalFormat;
@@ -40,6 +41,16 @@ public class Utils {
     private static final long MINUTE = 60 * SECOND;
     private static final long HOUR = 60 * MINUTE;
     private static final long DAY = 24 * HOUR;
+
+    public static String mappingToCreditCardAuthentication(String type, boolean secure) {
+        if (type.equalsIgnoreCase(Authentication.AUTH_3DS) && secure) {
+            return Authentication.AUTH_3DS;
+        } else if (type.equalsIgnoreCase(Authentication.AUTH_RBA) && !secure) {
+            return Authentication.AUTH_RBA;
+        } else {
+            return Authentication.AUTH_NONE;
+        }
+    }
 
     public static boolean isNetworkAvailable(Context context) {
         try {
@@ -74,7 +85,7 @@ public class Utils {
             DecimalFormatSymbols otherSymbols = new DecimalFormatSymbols(Locale.US);
             otherSymbols.setDecimalSeparator('.');
             otherSymbols.setGroupingSeparator(',');
-            String amountString = new DecimalFormat("#,###", otherSymbols).format(amount);
+            String amountString = new DecimalFormat("#,###.##", otherSymbols).format(amount);
             return amountString;
         } catch (NullPointerException | IllegalArgumentException e) {
             return "" + amount;
@@ -228,6 +239,7 @@ public class Utils {
         DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z");
         df.setTimeZone(TimeZone.getTimeZone("Asia/Jakarta"));
         String nowAsISO = df.format(new Date(time));
+
         return nowAsISO;
     }
 

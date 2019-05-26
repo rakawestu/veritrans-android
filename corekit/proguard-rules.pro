@@ -119,6 +119,7 @@
 -keep class com.midtrans.sdk.corekit.core.BaseSdkBuilder {*;}
 -keep class com.midtrans.sdk.corekit.core.ISdkFlow {*;}
 -keep class com.midtrans.sdk.corekit.core.IScanner {*;}
+-keep class com.midtrans.sdk.corekit.core.Currency {*;}
 -keep class com.midtrans.sdk.corekit.core.UIKitCustomSetting {*;}
 -keep class com.midtrans.sdk.corekit.core.themes.BaseColorTheme {*;}
 -keep class com.midtrans.sdk.corekit.core.themes.ColorTheme {*;}
@@ -131,6 +132,7 @@
 -keep class com.midtrans.sdk.corekit.core.PaymentMethods{*;}
 -keep class com.midtrans.sdk.corekit.callback.** { *; }
 -keep class com.midtrans.sdk.corekit.core.PaymentMethod{*;}
+-keep class com.midtrans.sdk.corekit.core.PaymentException{*;}
 
 
 # RxJava 0.21

@@ -1,7 +1,6 @@
 package com.midtrans.sdk.corekit.core;
 
 import android.text.TextUtils;
-
 import com.midtrans.sdk.corekit.callback.CheckoutCallback;
 import com.midtrans.sdk.corekit.callback.GetCardCallback;
 import com.midtrans.sdk.corekit.callback.SaveCardCallback;
@@ -9,13 +8,12 @@ import com.midtrans.sdk.corekit.models.SaveCardRequest;
 import com.midtrans.sdk.corekit.models.SaveCardResponse;
 import com.midtrans.sdk.corekit.models.TokenRequestModel;
 import com.midtrans.sdk.corekit.models.snap.Token;
-
-import java.util.ArrayList;
-import java.util.List;
-
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by ziahaqi on 3/27/18.
@@ -72,23 +70,35 @@ public class MerchantServiceManager extends BaseServiceManager {
      * @param userId       unique id for every user
      * @param callback     save card callback
      */
-    public void saveCards(String userId, List<SaveCardRequest> cardRequests, final SaveCardCallback callback) {
+    public void saveCards(String userId, final List<SaveCardRequest> cardRequests, final SaveCardCallback callback) {
         if (service == null) {
             doOnApiServiceUnAvailable(callback);
             return;
         }
 
         if (cardRequests != null) {
-            Call<String> call = service.saveCards(userId, cardRequests);
-            call.enqueue(new Callback<String>() {
+            Call<List<SaveCardRequest>> call = service.saveCards(userId, cardRequests);
+            final SaveCardResponse saveCardResponse = new SaveCardResponse();
+
+            call.enqueue(new Callback<List<SaveCardRequest>>() {
                 @Override
-                public void onResponse(Call<String> call, Response<String> response) {
+                public void onResponse(Call<List<SaveCardRequest>> call, Response<List<SaveCardRequest>> response) {
                     releaseResources();
 
-                    SaveCardResponse saveCardResponse = new SaveCardResponse();
-                    saveCardResponse.setCode(response.code());
-                    saveCardResponse.setMessage(response.message());
-                    if (response.code() == 200 || response.code() == 201) {
+                    String statusCode = "";
+                    List<SaveCardRequest> data = response.body();
+
+                    if (data != null && !data.isEmpty()) {
+                        SaveCardRequest cardResponse = data.get(0);
+                        if (cardResponse != null) {
+                            statusCode = cardResponse.getCode();
+                        }
+                    }
+
+                    if (isSuccess(response.code(), statusCode)) {
+                        saveCardResponse.setCode(response.code());
+                        saveCardResponse.setMessage(response.message());
+
                         callback.onSuccess(saveCardResponse);
                     } else {
                         callback.onFailure(response.message());
@@ -96,14 +106,41 @@ public class MerchantServiceManager extends BaseServiceManager {
                 }
 
                 @Override
-                public void onFailure(Call<String> call, Throwable t) {
-                    doOnResponseFailure(t, callback);
+                public void onFailure(Call<List<SaveCardRequest>> call, Throwable t) {
+                    if (t instanceof IllegalStateException) {
+                        callback.onSuccess(saveCardResponse);
+                    } else {
+                        doOnResponseFailure(t, callback);
+                    }
                 }
             });
 
         } else {
             doOnInvalidDataSupplied(callback);
         }
+    }
+
+
+    private boolean isSuccess(int httpStatusCode, String responseStatusCode) {
+
+        if (httpStatusCode == 200
+                || httpStatusCode == 201
+                || isResponseStatusCodeSuccess(responseStatusCode)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private boolean isResponseStatusCodeSuccess(String responseStatusCode) {
+
+        if (!TextUtils.isEmpty(responseStatusCode)
+                && (responseStatusCode.equals(Constants.STATUS_CODE_200)
+                || responseStatusCode.equals(Constants.STATUS_CODE_201))) {
+            return true;
+        }
+
+        return false;
     }
 
     /**

@@ -13,7 +13,6 @@ import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
 import android.view.View;
-
 import com.midtrans.raygun.RaygunClient;
 import com.midtrans.sdk.corekit.core.Logger;
 import com.midtrans.sdk.corekit.core.MidtransSDK;
@@ -51,6 +50,9 @@ public class UserDetailsActivity extends BaseActivity {
     public static final String INDOMARET = "indomaret";
     public static final String KIOSON = "kioson";
     public static final String GIFT_CARD = "gci";
+    public static final String DANAMON_ONLINE = "danamon_online";
+    public static final String AKULAKU = "akulaku";
+    public static final String ALFAMART = "alfamart";
     private static final String TAG = "UserDetailsActivity";
 
     @Override
@@ -199,6 +201,12 @@ public class UserDetailsActivity extends BaseActivity {
             paymentOptionIntent.putExtra(KIOSON, true);
         } else if (getIntent().getBooleanExtra(GIFT_CARD, false)) {
             paymentOptionIntent.putExtra(GIFT_CARD, true);
+        } else if (getIntent().getBooleanExtra(DANAMON_ONLINE, false)) {
+            paymentOptionIntent.putExtra(DANAMON_ONLINE, true);
+        } else if (getIntent().getBooleanExtra(AKULAKU, false)) {
+            paymentOptionIntent.putExtra(AKULAKU, true);
+        } else if (getIntent().getBooleanExtra(ALFAMART, false)) {
+            paymentOptionIntent.putExtra(ALFAMART, true);
         }
 
         paymentOptionIntent.putExtra(UiKitConstants.EXTRA_SNAP_TOKEN,
